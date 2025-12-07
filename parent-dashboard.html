@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Dashboard - School Fee Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <style>
+        /* Page Loader */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(13, 110, 253, 0.1);
+            border-left-color: #0d6efd;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Payment and Notification Lists */
+        .payment-history-list, .notifications-list {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .payment-history-item, .notification-item {
+            animation: fadeIn 0.5s ease;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .payment-history-item:hover, .notification-item:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Dashboard sections */
+        #paymentHistory, #notificationsContainer {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .card,
+        body.dark-mode .modal-content,
+        body.dark-mode .notification-item,
+        body.dark-mode .payment-history-item {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            border-color: #333;
+        }
+
+        body.dark-mode .card-header,
+        body.dark-mode .modal-header,
+        body.dark-mode .modal-footer {
+            background-color: #252525;
+            border-color: #333;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .table {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .table-responsive {
+            border-color: #333;
+        }
+
+        body.dark-mode .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        body.dark-mode .form-control,
+        body.dark-mode .form-select {
+            background-color: #2d2d2d;
+            border-color: #444;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .text-muted {
+            color: #aaaaaa !important;
+        }
+
+        body.dark-mode .btn-secondary {
+            background-color: #444;
+            border-color: #555;
+        }
+
+        body.dark-mode .modal-backdrop {
+            background-color: #000;
+        }
+
+        body.dark-mode #darkModeToggle .fa-sun {
+            display: inline-block;
+        }
+
+        body.dark-mode #darkModeToggle .fa-moon {
+            display: none;
+        }
+
+        #darkModeToggle .fa-sun {
+            display: none;
+        }
+
+        #darkModeToggle .fa-moon {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Loader -->
+    <div class="page-loader" id="pageLoader">
+        <div class="spinner"></div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">School Fee Management</a>
+            <div class="navbar-nav ms-auto d-flex align-items-center">
+                <button id="darkModeToggle" class="btn btn-outline-light me-3">
+                    <i class="fas fa-sun"></i>
+                    <i class="fas fa-moon"></i>
+                </button>
+                <span class="nav-link text-light me-3" id="parentNameDisplay">Welcome</span>
+                <a class="nav-link" href="#" id="logoutBtn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container dashboard-container">
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card dashboard-card">
+                    <div class="card-body">
+                        <h3 class="card-title">Welcome, <span id="parentName">Parent</span>!</h3>
+                        <p class="card-text">Manage your child's school fees and payments from this dashboard.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5>Fee Payment Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Month/Term</th>
+                                        <th>Amount</th>
+                                        <th>Due Date</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="feeStatusTable">
+                                    <!-- Fee status will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5>Quick Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6>Total Due</h6>
+                            <h3 id="totalDue">$0</h3>
+                        </div>
+                        <div class="mb-3">
+                            <h6>Next Payment Due</h6>
+                            <h4 id="nextDueDate">No pending payments</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card dashboard-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>Notifications</h5>
+                        <button id="viewAllNotificationsBtn" class="btn btn-sm btn-outline-primary">View All</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="notificationsContainer">
+                            <!-- Notifications will be populated here -->
+                            <div class="text-center py-3">No notifications</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card dashboard-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>Payment History</h5>
+                        <button id="viewAllPaymentsBtn" class="btn btn-sm btn-outline-primary">View All</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="paymentHistory">
+                            <!-- Payment history will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Make Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentForm">
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" class="form-control" id="paymentAmount" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Payment Method</label>
+                            <select class="form-control" id="paymentMethod" required>
+                                <option value="credit_card">Credit Card</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+                        <div id="creditCardFields" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Card Number</label>
+                                <input type="text" class="form-control" id="cardNumber" placeholder="1234 5678 9012 3456">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Expiry Date</label>
+                                        <input type="text" class="form-control" id="expiryDate" placeholder="MM/YY">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">CVV</label>
+                                        <input type="text" class="form-control" id="cvv" placeholder="123">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="bankTransferFields" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Select Bank</label>
+                                <select class="form-control" id="bankName" required>
+                                    <option value="">Select a bank</option>
+                                    <option value="meezan">Meezan Bank</option>
+                                    <option value="hbl">HBL</option>
+                                    <option value="abl">ABL</option>
+                                    <option value="standard_chartered">Standard Chartered</option>
+                                    <option value="ubl">UBL</option>
+                                    <option value="mcb">MCB</option>
+                                    <option value="bank_alfalah">Bank Alfalah</option>
+                                    <option value="bank_islami">Bank Islami</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Account Number</label>
+                                <input type="text" class="form-control" id="accountNumber" placeholder="Enter your account number">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Account Title</label>
+                                <input type="text" class="form-control" id="accountTitle" placeholder="Enter account title">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="processPayment">Pay Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Payment History Modal -->
+    <div class="modal fade" id="allPaymentsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Complete Payment History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="allPaymentHistory" class="payment-history-list">
+                        <!-- All payment history will be populated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Notifications Modal -->
+    <div class="modal fade" id="allNotificationsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">All Notifications</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="allNotificationsContainer" class="notifications-list">
+                        <!-- All notifications will be populated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer style=" text-align: center;">
+        <b>&copy; Developed & Maintained By Toheed Qureshi</b>
+        <i>All rights reserved</i>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="parent-dashboard.js"></script>
+</body>
+</html> 

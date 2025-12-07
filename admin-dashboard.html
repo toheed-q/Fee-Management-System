@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - School Fee Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <style>
+        /* Page Loader */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(13, 110, 253, 0.1);
+            border-left-color: #0d6efd;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Transactions Table Styles */
+        .transaction-row {
+            animation: fadeIn 0.5s ease-in-out forwards;
+            opacity: 0;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Sticky Header */
+        .sticky-top.bg-white {
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1020;
+        }
+        
+        /* Card Header with Button */
+        .card-header {
+            position: relative;
+        }
+        
+        #viewAllTransactionsBtn {
+            transition: all 0.3s ease;
+        }
+        
+        #viewAllTransactionsBtn:hover {
+            transform: translateX(3px);
+        }
+        
+        /* Pagination styles */
+        .pagination-controls button {
+            transition: all 0.2s ease;
+        }
+        
+        .pagination-controls button:hover:not([disabled]) {
+            transform: scale(1.05);
+        }
+        
+        /* Filter controls */
+        .filter-controls {
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+        
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .card,
+        body.dark-mode .modal-content,
+        body.dark-mode .sticky-top.bg-white {
+            background-color: #1e1e1e !important;
+            color: #e0e0e0;
+            border-color: #333;
+        }
+
+        body.dark-mode .card-header,
+        body.dark-mode .modal-header,
+        body.dark-mode .modal-footer {
+            background-color: #252525;
+            border-color: #333;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .table {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .table-responsive {
+            border-color: #333;
+        }
+
+        body.dark-mode .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        body.dark-mode .form-control,
+        body.dark-mode .form-select {
+            background-color: #2d2d2d;
+            border-color: #444;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .text-muted {
+            color: #aaaaaa !important;
+        }
+
+        body.dark-mode .btn-secondary {
+            background-color: #444;
+            border-color: #555;
+        }
+
+        body.dark-mode .filter-controls {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
+        body.dark-mode .modal-backdrop {
+            background-color: #000;
+        }
+
+        body.dark-mode #darkModeToggle .fa-sun {
+            display: inline-block;
+        }
+
+        body.dark-mode #darkModeToggle .fa-moon {
+            display: none;
+        }
+
+        #darkModeToggle .fa-sun {
+            display: none;
+        }
+
+        #darkModeToggle .fa-moon {
+            display: inline-block;
+        }
+
+        /* Side Menu Styles */
+        #sideMenu {
+            overflow-y: auto;
+            padding-top: 60px;
+        }
+
+        body.dark-mode #sideMenu {
+            background-color: #1e1e1e !important;
+            border-right: 1px solid #333;
+        }
+
+        body.dark-mode #sideMenuToggle {
+            background-color: #0d6efd !important;
+            border-color: #0d6efd !important;
+        }
+
+        body.dark-mode #closeSideMenu {
+            background-color: #252525 !important;
+            border-color: #333 !important;
+        }
+
+        @media (max-width: 768px) {
+            #sideMenu {
+                width: 100%;
+                left: -100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Loader -->
+    <div class="page-loader" id="pageLoader">
+        <div class="spinner"></div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">School Fee Management</a>
+            <div class="navbar-nav ms-auto d-flex align-items-center">
+                <button id="darkModeToggle" class="btn btn-outline-light me-3">
+                    <i class="fas fa-sun"></i>
+                    <i class="fas fa-moon"></i>
+                </button>
+                <span class="nav-link text-light me-3" id="adminNameDisplay">Welcome, Admin</span>
+                <a class="nav-link" href="#" id="logoutBtn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container dashboard-container">
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card dashboard-card">
+                    <div class="card-body">
+                        <h3 class="card-title">Welcome, <span id="adminName">Admin</span>!</h3>
+                        <p class="card-text">Manage school fees, view payments, and keep track of registered parents.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5>Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary w-100 mb-2" id="setupFeeBtn">Setup Fee Structure</button>
+                        <button class="btn btn-primary w-100 mb-2" id="viewParentsBtn">View Registered Parents</button>
+                        <button class="btn btn-primary w-100 mb-2" id="generateReportBtn">Generate Report</button>
+                        <button class="btn btn-primary w-100 mb-2" id="sendRemindersBtn">Send Payment Reminders</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5>Fee Collection Overview</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <h6>Total Collected</h6>
+                                        <h3 id="totalCollected">$0</h3>
+                                        <small>Total fees successfully collected</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body">
+                                        <h6>Pending Payments</h6>
+                                        <h3 id="pendingPayments">0</h3>
+                                        <small>Assigned fees awaiting payment</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body">
+                                        <h6>Overdue Payments <i class="fas fa-info-circle" data-bs-toggle="tooltip" title="Fees whose due date has passed and are still unpaid"></i></h6>
+                                        <h3 id="overduePayments">0</h3>
+                                        <small>Unpaid fees past their due date</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5>Recent Transactions</h5>
+                        <div class="position-absolute" style="right: 15px; top: 10px;">
+                            <button class="btn btn-sm btn-outline-primary" id="viewAllTransactionsBtn">
+                                View All <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Parent</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionsTable">
+                                    <!-- Transactions will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parents Modal -->
+    <div class="modal fade" id="parentsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registered Parents</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Registration Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="parentsTable">
+                                <!-- Parents will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Fee Modal -->
+    <div class="modal fade" id="assignFeeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Assign Fee to Parent</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="assignFeeForm">
+                        <div class="mb-3">
+                            <label class="form-label">Parent</label>
+                            <input type="text" class="form-control" id="assignParentName" readonly>
+                            <input type="hidden" id="assignParentId">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fee Type</label>
+                            <select class="form-control" id="assignFeeType" required>
+                                <option value="monthly">Monthly</option>
+                                <option value="term">Term-wise</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" class="form-control" id="assignFeeAmount" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="assignDueDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="assignFeeDescription" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveAssignFee">Assign Fee</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fee Structure Modal -->
+    <div class="modal fade" id="feeStructureModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Setup Fee Structure</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="feeStructureForm">
+                        <div class="mb-3">
+                            <label class="form-label">Fee Type</label>
+                            <select class="form-control" id="feeType" required>
+                                <option value="monthly">Monthly</option>
+                                <option value="term">Term-wise</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" class="form-control" id="feeAmount" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="dueDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="feeDescription" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveFeeStructure">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div class="modal fade" id="reportModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Payment Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <h6 class="mb-3">User Payment Summary</h6>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Parent Name</th>
+                                        <th>Email</th>
+                                        <th>Payments Made</th>
+                                        <th>Total Amount Paid</th>
+                                        <th>Pending Payments</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userSummaryTable">
+                                    <!-- User summary will be populated here -->
+                                    <tr>
+                                        <td colspan="5" class="text-center">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="mb-3">Unpaid Fees</h6>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Parent Name</th>
+                                        <th>Fee Type</th>
+                                        <th>Amount</th>
+                                        <th>Description</th>
+                                        <th>Due Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="unpaidFeesTable">
+                                    <!-- Unpaid fees will be populated here -->
+                                    <tr>
+                                        <td colspan="5" class="text-center">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h6 class="mb-3">Payment Details</h6>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Parent Name</th>
+                                        <th>Fee Type</th>
+                                        <th>Amount</th>
+                                        <th>Payment Date</th>
+                                        <th>Status</th>
+                                        <th>Method</th>
+                                        <th>Transaction Reference</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="paymentDetailsTable">
+                                    <!-- Payment details will be populated here -->
+                                    <tr>
+                                        <td colspan="7" class="text-center">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="exportReportBtn">Export to CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Transactions Modal -->
+    <div class="modal fade" id="allTransactionsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">All Transactions</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Search and Filter Controls -->
+                    <div class="p-3 bg-light border-bottom">
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <input type="text" class="form-control" id="transactionSearchInput" placeholder="Search by parent name...">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <select class="form-control" id="transactionStatusFilter">
+                                    <option value="">All Statuses</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="overdue">Overdue</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <select class="form-control" id="transactionDateFilter">
+                                    <option value="">All Time</option>
+                                    <option value="7">Last 7 Days</option>
+                                    <option value="30">Last 30 Days</option>
+                                    <option value="90">Last 90 Days</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <button class="btn btn-primary w-100" id="applyTransactionFilters">Filter</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transactions Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="sticky-top bg-white">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Parent Name</th>
+                                    <th>Email</th>
+                                    <th>Fee Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Method</th>
+                                    <th>Transaction Ref</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allTransactionsTable">
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">Loading transactions...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="d-flex justify-content-between w-100">
+                        <div class="pagination-info">
+                            Showing <span id="transactionPaginationInfo">0-0 of 0</span> transactions
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="btn btn-sm btn-outline-primary me-2" id="prevTransactionsPage" disabled>
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" id="nextTransactionsPage" disabled>
+                                Next <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Notification Modal -->
+    <div class="modal fade" id="notificationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Send Notification to Parents</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="notificationForm">
+                        <div class="mb-3">
+                            <label class="form-label">Recipient</label>
+                            <select class="form-control" id="notificationRecipient" required>
+                                <option value="all">All Parents</option>
+                                <option value="individual">Select Individual Parents</option>
+                            </select>
+                        </div>
+                        
+                        <div id="individualParentsSection" class="mb-3" style="display: none;">
+                            <label class="form-label">Select Parents</label>
+                            <div class="form-control" style="height: auto; max-height: 200px; overflow-y: auto;">
+                                <div id="parentCheckboxes">
+                                    <!-- Parent checkboxes will be populated here -->
+                                    <div class="text-center py-2">Loading parents...</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="notificationSubject" placeholder="Notification Subject" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Message</label>
+                            <textarea class="form-control" id="notificationMessage" rows="5" placeholder="Enter your message here..." required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Priority</label>
+                            <select class="form-control" id="notificationPriority" required>
+                                <option value="normal">Normal</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="sendNotificationBtn">Send Notification</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Side Menu Toggle Button -->
+    <button id="sideMenuToggle" class="btn btn-primary position-fixed" style="left: 0; top: 50%; transform: translateY(-50%); z-index: 1030; border-radius: 0 5px 5px 0; padding: 10px;">
+        <i class="fas fa-chevron-right"></i>
+    </button>
+
+    <!-- Side Menu -->
+    <div id="sideMenu" class="position-fixed bg-dark text-white" style="left: -250px; top: 0; width: 250px; height: 100%; z-index: 1040; transition: all 0.3s; box-shadow: 3px 0 5px rgba(0,0,0,0.2);">
+        <div class="p-3 border-bottom border-secondary">
+            <h5 class="mb-0 d-flex justify-content-between align-items-center">
+                Quick Actions
+                <button class="btn btn-sm btn-dark text-white" id="closeSideMenu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </h5>
+        </div>
+        <div class="p-3">
+            <ul class="nav flex-column">
+                <li class="nav-item mb-2">
+                    <a href="#" class="nav-link text-white d-flex align-items-center" id="viewUnpaidParentsBtn">
+                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                        Parents with Unpaid Fees
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a href="#" class="nav-link text-white d-flex align-items-center" id="viewOverdueParentsBtn">
+                        <i class="fas fa-user-clock me-2 text-danger"></i>
+                        Parents with Overdue Fees
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a href="#" class="nav-link text-white d-flex align-items-center" id="sendRemindersFromSideBtn">
+                        <i class="fas fa-bell me-2 text-info"></i>
+                        Send Payment Reminders
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Unpaid Parents Modal -->
+    <div class="modal fade" id="unpaidParentsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">Parents with Unpaid Fees</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Parent</th>
+                                    <th>Email</th>
+                                    <th>Pending Amount</th>
+                                    <th>Pending Fees</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="unpaidParentsTable">
+                                <tr>
+                                    <td colspan="5" class="text-center">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-warning" id="sendRemindersToUnpaidBtn">
+                        <i class="fas fa-envelope me-1"></i> Send Reminders
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Parents Modal -->
+    <div class="modal fade" id="overdueParentsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Parents with Overdue Fees</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Parent</th>
+                                    <th>Email</th>
+                                    <th>Overdue Amount</th>
+                                    <th>Days Overdue</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overdueParentsTable">
+                                <tr>
+                                    <td colspan="5" class="text-center">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger" id="sendRemindersToOverdueBtn">
+                        <i class="fas fa-exclamation-circle me-1"></i> Send Urgent Reminders
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+<footer style=" text-align: center;">
+    <b>&copy; Developed & Maintained By Toheed Qureshi</b>
+    <i>All rights reserved</i>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script src="admin-dashboard.js"></script>
+</body>
+</html> 

@@ -1,0 +1,21 @@
+
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    depends_on:
+      - db
+
+  db:
+    image: alpine:latest
+    volumes:
+      - ./school_fee.db:/data/school_fee.db
+    command: sh -c "apk add --no-cache sqlite && sqlite3 /data/school_fee.db" 
